@@ -1,4 +1,7 @@
 # The Secure Software Development Lifecycle: A Strategic Blueprint for Implementation
+---
+https://smcallan.github.io/SSDLC-Security-Throughout-Development/
+---
 Section 1: The Strategic Imperative of a Secure SDLC
 1.1 Defining the Modern SSDLC: A Paradigm Shift
 
